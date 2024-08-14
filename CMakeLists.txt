@@ -1,35 +1,45 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.8)
 
 project(gpr)
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 99)
+endif()
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
 
-if(CMAKE_COMPILER_IS_GNUCXX OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
-	SET(EXTRA_CXX_COMPILE_FLAGS "-std=c++11 -I./src -I./test -Werror -Wall")
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
-	SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${EXTRA_CXX_COMPILE_FLAGS}")
-endif(CMAKE_COMPILER_IS_GNUCXX OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
+find_package(ament_cmake REQUIRED)
 
-INCLUDE_DIRECTORIES(./src/)
+ament_export_include_directories("include/${PROJECT_NAME}")
 
-SET(GPR_HEADERS src/gcode_program.h
-		src/parser.h)
+add_library(gpr_lib src/parser.cpp src/gcode_program.cpp)
 
-SET(GPR_CPPS src/parser.cpp
-	     src/gcode_program.cpp)
+ament_target_dependencies(gpr_lib)
 
-set(CMAKE_MACOSX_RPATH 1)
+target_include_directories(gpr_lib
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
 
-add_library(gpr SHARED ${GPR_CPPS})
+install(
+  DIRECTORY include/${PROJECT_NAME}
+  DESTINATION include/${PROJECT_NAME}
+)
 
-SET(TEST_FILES test/parser_tests.cpp
-	       test/main.cpp)
+install(
+  TARGETS gpr_lib
+  EXPORT export_${PROJECT_NAME}
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+)
 
-add_executable(all-tests ${TEST_FILES})
-target_link_libraries(all-tests gpr)
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
+ament_export_libraries(gpr_lib)
 
-add_executable(parse-gcode src/main.cpp)
-target_link_libraries(parse-gcode gpr)
-
-install(TARGETS gpr LIBRARY DESTINATION lib)
+ament_package()

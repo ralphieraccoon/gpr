@@ -1,4 +1,4 @@
-#include "gcode_program.h"
+#include "gpr/gcode_program.h"
 
 using namespace std;
 
